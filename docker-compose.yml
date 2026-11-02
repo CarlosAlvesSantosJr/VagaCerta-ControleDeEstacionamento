@@ -1,0 +1,104 @@
+x-servico-java: &servico-java
+  restart: unless-stopped
+  environment: &env-banco
+    SPRING_DATASOURCE_USERNAME: postgres
+    SPRING_DATASOURCE_PASSWORD: root
+    TZ: America/Sao_Paulo
+  depends_on:
+    postgres:
+      condition: service_healthy
+  networks:
+    - vagacerta
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vagacerta-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      TZ: America/Sao_Paulo
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - vagacerta
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  veiculo-service:
+    <<: *servico-java
+    build: ./veiculo-service
+    container_name: vagacerta-veiculo
+    environment:
+      <<: *env-banco
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/veiculo_db
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  cobranca-service:
+    <<: *servico-java
+    build: ./cobranca-service
+    container_name: vagacerta-cobranca
+    environment:
+      <<: *env-banco
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cobranca_db
+      COBRANCA_VALOR_FRACAO: "3.00"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  estacionamento-service:
+    <<: *servico-java
+    build: ./estacionamento-service
+    container_name: vagacerta-estacionamento
+    environment:
+      <<: *env-banco
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/estacionamento_db
+      SERVICOS_VEICULO_URL: http://veiculo-service:8081
+      SERVICOS_COBRANCA_URL: http://cobranca-service:8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+      veiculo-service:
+        condition: service_healthy
+      cobranca-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  gateway:
+    build: ./gateway
+    container_name: vagacerta-gateway
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    depends_on:
+      - veiculo-service
+      - cobranca-service
+      - estacionamento-service
+    networks:
+      - vagacerta
+
+volumes:
+  postgres-data:
+
+networks:
+  vagacerta:
+    driver: bridge

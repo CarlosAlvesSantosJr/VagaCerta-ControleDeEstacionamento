@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VagaCerta · Controle de Estacionamento</title>
+    <link rel="icon" href="img/icone.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="topo">
+    <div class="topo__conteudo">
+        <a class="marca" href="#patio" aria-label="VagaCerta - início">
+            <img class="marca__icone" src="img/icone.svg" alt="" width="44" height="44">
+            <span class="marca__texto">
+                <span class="marca__nome">Vaga<span class="marca__destaque">Certa</span></span>
+                <span class="marca__slogan">Controle de estacionamento</span>
+            </span>
+        </a>
+
+        <nav class="abas" aria-label="Seções">
+            <a class="aba" href="#patio" data-aba="patio">Pátio</a>
+            <a class="aba" href="#planos" data-aba="planos">Planos</a>
+            <a class="aba" href="#historico" data-aba="historico">Histórico</a>
+        </nav>
+
+        <div class="relogio" aria-label="Data e hora atuais">
+            <span class="relogio__hora" id="relogio-hora">--:--</span>
+            <span class="relogio__data" id="relogio-data"></span>
+        </div>
+    </div>
+</header>
+
+<main class="pagina">
+
+    <section class="indicadores" aria-label="Resumo do dia">
+        <div class="indicador">
+            <span class="indicador__rotulo">No pátio agora</span>
+            <span class="indicador__valor" id="kpi-patio">–</span>
+        </div>
+        <div class="indicador">
+            <span class="indicador__rotulo">Entradas hoje</span>
+            <span class="indicador__valor" id="kpi-entradas">–</span>
+        </div>
+        <div class="indicador indicador--destaque">
+            <span class="indicador__rotulo">Faturamento hoje</span>
+            <span class="indicador__valor" id="kpi-faturamento">–</span>
+        </div>
+    </section>
+
+    <!-- ============ PÁTIO ============ -->
+    <section class="secao" id="secao-patio" data-secao="patio">
+        <div class="grade-patio">
+
+            <form class="cartao formulario" id="form-entrada" novalidate>
+                <h2 class="cartao__titulo">Nova entrada</h2>
+                <p class="cartao__subtitulo">O horário de entrada é registrado automaticamente.</p>
+
+                <div class="campo">
+                    <label for="placa">Placa</label>
+                    <input class="entrada-placa" id="placa" name="placa" autocomplete="off" spellcheck="false"
+                           placeholder="ABC1D23" maxlength="8" required aria-describedby="placa-ajuda">
+                    <small class="campo__ajuda" id="placa-ajuda">Padrão Mercosul ou antigo</small>
+                </div>
+
+                <div class="campo">
+                    <label for="modelo">Modelo</label>
+                    <input id="modelo" name="modelo" placeholder="Ex: Onix, HB20, Corolla" required list="modelos-comuns">
+                    <datalist id="modelos-comuns">
+                        <option value="Onix"><option value="HB20"><option value="Gol"><option value="Corolla">
+                        <option value="Compass"><option value="T-Cross"><option value="Strada"><option value="Kwid">
+                    </datalist>
+                </div>
+
+                <fieldset class="campo">
+                    <legend>Cor</legend>
+                    <div class="cores" id="cores" role="radiogroup">
+                        <!-- preenchido via JS -->
+                    </div>
+                    <input id="cor" name="cor" placeholder="Outra cor" required aria-label="Cor do veículo">
+                </fieldset>
+
+                <div class="campo">
+                    <label for="whatsapp">WhatsApp do condutor</label>
+                    <input id="whatsapp" name="whatsapp" type="tel" inputmode="numeric" placeholder="(11) 98765-4321" required>
+                </div>
+
+                <p class="erro-form" id="erro-entrada" role="alert" hidden></p>
+
+                <button class="botao botao--primario botao--grande" type="submit" id="botao-entrada">
+                    Registrar entrada
+                </button>
+            </form>
+
+            <div class="cartao">
+                <div class="cabecalho-lista">
+                    <div>
+                        <h2 class="cartao__titulo">Veículos no pátio</h2>
+                        <p class="cartao__subtitulo" id="tarifa-resumo">Carregando tarifa…</p>
+                    </div>
+                    <input class="busca" id="busca-patio" type="search" placeholder="Buscar placa" aria-label="Buscar placa no pátio">
+                </div>
+                <ul class="lista-patio" id="lista-patio" aria-live="polite"></ul>
+                <div class="vazio" id="patio-vazio" hidden>
+                    <img src="img/icone.svg" alt="" width="56" height="56">
+                    <p><strong>Pátio vazio</strong><br>As entradas registradas aparecem aqui.</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ============ PLANOS ============ -->
+    <section class="secao" id="secao-planos" data-secao="planos" hidden>
+        <div class="cartao">
+            <h2 class="cartao__titulo">Tabela de preços</h2>
+            <p class="cartao__subtitulo">Clientes esporádicos pagam por fração de tempo. Mensalistas não pagam por permanência enquanto o plano estiver vigente.</p>
+            <div class="precos" id="precos"></div>
+        </div>
+
+        <div class="grade-planos">
+            <form class="cartao formulario" id="form-plano" novalidate>
+                <h2 class="cartao__titulo">Contratar ou renovar plano</h2>
+                <p class="cartao__subtitulo">Se a placa já tiver plano vigente, o novo começa no dia seguinte ao fim do atual.</p>
+
+                <div class="campo">
+                    <label for="plano-placa">Placa</label>
+                    <input class="entrada-placa" id="plano-placa" autocomplete="off" placeholder="ABC1D23" maxlength="8" required>
+                </div>
+                <div class="campo">
+                    <label for="plano-nome">Nome do cliente</label>
+                    <input id="plano-nome" autocomplete="name" placeholder="Nome completo" required>
+                </div>
+                <fieldset class="campo">
+                    <legend>Plano</legend>
+                    <div class="opcoes-plano" id="opcoes-plano" role="radiogroup"></div>
+                </fieldset>
+
+                <p class="erro-form" id="erro-plano" role="alert" hidden></p>
+                <button class="botao botao--primario botao--grande" type="submit" id="botao-plano">Contratar plano</button>
+            </form>
+
+            <div class="cartao">
+                <div class="cabecalho-lista">
+                    <h2 class="cartao__titulo">Assinaturas</h2>
+                    <input class="busca" id="busca-assinaturas" type="search" placeholder="Buscar placa ou nome" aria-label="Buscar assinatura">
+                </div>
+                <div class="tabela-rolagem">
+                    <table class="tabela">
+                        <thead>
+                        <tr><th>Placa</th><th>Cliente</th><th>Plano</th><th>Vigência</th><th>Status</th><th></th></tr>
+                        </thead>
+                        <tbody id="lista-assinaturas"></tbody>
+                    </table>
+                </div>
+                <p class="vazio vazio--linha" id="assinaturas-vazio" hidden>Nenhuma assinatura cadastrada.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ HISTÓRICO ============ -->
+    <section class="secao" id="secao-historico" data-secao="historico" hidden>
+        <div class="cartao">
+            <h2 class="cartao__titulo">Últimas saídas</h2>
+            <p class="cartao__subtitulo">As 50 saídas mais recentes.</p>
+            <div class="tabela-rolagem">
+                <table class="tabela">
+                    <thead>
+                    <tr><th>Placa</th><th>Veículo</th><th>Entrada</th><th>Saída</th><th>Permanência</th><th>Cobrança</th><th class="num">Valor</th></tr>
+                    </thead>
+                    <tbody id="lista-historico"></tbody>
+                </table>
+            </div>
+            <p class="vazio vazio--linha" id="historico-vazio" hidden>Nenhuma saída registrada ainda.</p>
+        </div>
+    </section>
+</main>
+
+<!-- Saída: prévia → confirmação → recibo -->
+<dialog class="dialogo" id="dialogo-saida" aria-labelledby="saida-titulo">
+    <form method="dialog" class="dialogo__fechar-form">
+        <button class="dialogo__fechar" aria-label="Fechar">×</button>
+    </form>
+    <div id="saida-conteudo"></div>
+</dialog>
+
+<div class="avisos" id="avisos" aria-live="polite" aria-atomic="false"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
