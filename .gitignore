@@ -1,3 +1,18 @@
+# Build
 target/
+
+# IDEs
 .idea/
 *.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Logs e variáveis locais
+*.log
+.env
