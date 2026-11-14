@@ -67,8 +67,8 @@ Acesse **http://localhost:8090**.
 ## Testes
 
 ```bash
-# 21 testes unitários: rodam automaticamente no build de cada imagem
-docker compose build
+# 76 testes unitários: rodam no build de cada imagem e no GitHub Actions
+./scripts/testes-unitarios.sh
 
 # 109 verificações de ponta a ponta na stack rodando
 ./testes/e2e.sh
