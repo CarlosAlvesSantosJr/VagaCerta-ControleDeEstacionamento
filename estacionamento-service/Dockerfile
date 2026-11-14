@@ -4,7 +4,7 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn -q dependency:go-offline
 COPY src ./src
-RUN mvn -q clean package
+RUN mvn -q package
 
 # Run stage
 FROM eclipse-temurin:21-jre-alpine
