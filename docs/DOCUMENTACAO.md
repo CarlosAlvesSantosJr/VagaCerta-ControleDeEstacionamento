@@ -966,18 +966,25 @@ Rodam em todo `docker compose build` (fase `mvn package`). Se algum teste falhar
 
 | Serviço | Classe | Testes | O que cobre |
 |---|---|---|---|
-| veiculo | `VeiculoServiceTest` | 3 | Normalização de placa e WhatsApp, horário de cadastro, atualização por placa existente, rejeição de WhatsApp sem DDD |
-| cobranca | `CalculadoraTarifaAvulsaTest` | 8 | 0 s, 10 min, 15 min, 15 min 01 s, 1 h, 1 h 01 min, 8 h; saída antes da entrada |
-| cobranca | `AssinaturaServiceTest` | 3 | Vigência dos 4 planos, renovação emendada, plano vencido não emenda |
-| cobranca | `CobrancaServiceTest` | 2 | Avulso cobra por fração; placa com plano paga zero |
-| estacionamento | `EstadiaServiceTest` | 5 | Horário do sistema na entrada, placa duplicada, saída com valor da cobrança, prévia não fecha o ticket, saída repetida |
-| **Total** | | **21** | |
+| veiculo | `VeiculoServiceTest` | 12 | Normalização de placa e WhatsApp (com DDI 55), horário de cadastro, atualização por placa existente, placa de outro veículo na alteração, busca por placa, exclusão, recurso inexistente |
+| veiculo | `VeiculoDtoValidationTest` | 12 | Placas no padrão antigo e Mercosul, placas fora do padrão, campos obrigatórios |
+| cobranca | `CalculadoraTarifaAvulsaTest` | 10 | 0 s, 10 min, 15 min, 15 min 01 s, 1 h, 1 h 01 min, 8 h; valor e fração configuráveis; minutos de permanência; saída antes da entrada |
+| cobranca | `AssinaturaServiceTest` | 9 | Vigência dos 4 planos, renovação emendada, plano vencido não emenda, preço do momento da contratação, cancelamento, cancelamento repetido, listagem por placa |
+| cobranca | `AssinaturaTest` | 6 | Limites da vigência (véspera, primeiro e último dia, dia seguinte) e assinatura cancelada |
+| cobranca | `PlanoServiceTest` | 5 | Carga inicial sem sobrescrever preços, ordenação por período, alteração de valor, plano inexistente |
+| cobranca | `CobrancaServiceTest` | 4 | Avulso cobra por fração; placa com plano paga zero; vigência pela data da saída; tabela de tarifas |
+| estacionamento | `EstadiaServiceTest` | 13 | Horário do sistema na entrada, snapshot do veículo, placa duplicada, saída avulsa e com plano, prévia não fecha o ticket, saída repetida, falha dos serviços remotos, resumo do dia, listagens |
+| estacionamento | `ErroRemotoTest` | 5 | Erro 4xx vira 400 com a mensagem do serviço remoto; 5xx e falha de conexão viram 503 |
+| **Total** | | **76** | |
 
-Para rodar só os testes de um serviço:
+Para rodar sem JDK nem Maven instalados (usa um contêiner Maven):
 
 ```bash
-docker run --rm -v "$PWD/cobranca-service":/app -w /app maven:3.9.9-eclipse-temurin-21 mvn -q test
+./scripts/testes-unitarios.sh                   # todos os serviços
+./scripts/testes-unitarios.sh cobranca-service  # só um serviço
 ```
+
+No GitHub, o workflow [`ci.yml`](../.github/workflows/ci.yml) roda os testes de cada serviço em paralelo a cada push e pull request e, em seguida, valida o `docker compose build`.
 
 ### 10.2 Ponta a ponta (`testes/e2e.sh`)
 
@@ -1077,6 +1084,8 @@ SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5433/cobranca_db mvn spring-bo
 │   └── src/main/java/controle_estacionamento/cobranca/
 │       ├── controller/  dto/  entity/  repository/  service/  exception/  config/
 ├── testes/e2e.sh                # testes de ponta a ponta
+├── scripts/testes-unitarios.sh  # testes unitários via contêiner Maven
+├── .github/workflows/ci.yml     # integração contínua (GitHub Actions)
 └── docs/
     ├── DOCUMENTACAO.md          # este documento
     └── img/                     # capturas de tela
