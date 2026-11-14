@@ -5,6 +5,8 @@ import controle_estacionamento.cobranca.dto.AssinaturaRequest;
 import controle_estacionamento.cobranca.entity.Assinatura;
 import controle_estacionamento.cobranca.entity.Plano;
 import controle_estacionamento.cobranca.entity.TipoPlano;
+import controle_estacionamento.cobranca.exception.RecursoNaoEncontradoException;
+import controle_estacionamento.cobranca.exception.RegraNegocioException;
 import controle_estacionamento.cobranca.repository.AssinaturaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,12 +16,13 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class AssinaturaServiceTest {
 
@@ -73,6 +76,78 @@ class AssinaturaServiceTest {
         when(repository.findFirstByPlacaAndCanceladaFalseOrderByFimDesc("ABC1D23")).thenReturn(Optional.of(vencida));
 
         assertThat(contratar(TipoPlano.MENSAL).inicio()).isEqualTo(LocalDate.of(2026, 11, 2));
+    }
+
+    @Test
+    void guardaPrecoDoPlanoNoMomentoDaContratacao() {
+        when(repository.findFirstByPlacaAndCanceladaFalseOrderByFimDesc("ABC1D23")).thenReturn(Optional.empty());
+        when(planoService.buscar(TipoPlano.MENSAL)).thenReturn(new Plano(TipoPlano.MENSAL, new BigDecimal("199.90")));
+
+        AssinaturaDto mensal = contratar(TipoPlano.MENSAL);
+
+        assertThat(mensal.valorPago()).isEqualByComparingTo("199.90");
+        assertThat(mensal.placa()).isEqualTo("ABC1D23");
+        assertThat(mensal.nomeCliente()).isEqualTo("Maria Souza");
+    }
+
+    @Test
+    void cancelarMarcaAssinaturaComoNaoVigente() {
+        Assinatura ativa = assinatura(10L, false);
+        when(repository.findById(10L)).thenReturn(Optional.of(ativa));
+
+        AssinaturaDto cancelada = service.cancelar(10L);
+
+        assertThat(cancelada.cancelada()).isTrue();
+        assertThat(cancelada.vigente()).isFalse();
+        verify(repository).save(ativa);
+    }
+
+    @Test
+    void naoCancelaDuasVezes() {
+        when(repository.findById(10L)).thenReturn(Optional.of(assinatura(10L, true)));
+
+        assertThatThrownBy(() -> service.cancelar(10L))
+                .isInstanceOf(RegraNegocioException.class)
+                .hasMessageContaining("já está cancelada");
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void cancelarAssinaturaInexistenteLancaNaoEncontrado() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.cancelar(99L)).isInstanceOf(RecursoNaoEncontradoException.class);
+    }
+
+    @Test
+    void listarSemPlacaTrazTodasEComPlacaFiltraNormalizada() {
+        when(repository.findAllByOrderByContratadaEmDesc()).thenReturn(List.of(assinatura(1L, false), assinatura(2L, false)));
+        when(repository.findByPlacaOrderByInicioDesc("ABC1D23")).thenReturn(List.of(assinatura(1L, false)));
+
+        assertThat(service.listar(null)).hasSize(2);
+        assertThat(service.listar("  ")).hasSize(2);
+        assertThat(service.listar("abc-1d23")).extracting(AssinaturaDto::id).containsExactly(1L);
+    }
+
+    @Test
+    void buscarVigenteHojeSemPlanoLancaNaoEncontrado() {
+        LocalDate hoje = LocalDate.of(2026, 11, 2);
+        when(repository.findFirstByPlacaAndCanceladaFalseAndInicioLessThanEqualAndFimGreaterThanEqual("ABC1D23", hoje, hoje))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.buscarVigenteHoje("abc-1d23"))
+                .isInstanceOf(RecursoNaoEncontradoException.class);
+    }
+
+    private Assinatura assinatura(Long id, boolean cancelada) {
+        Assinatura assinatura = new Assinatura();
+        assinatura.setId(id);
+        assinatura.setPlaca("ABC1D23");
+        assinatura.setTipoPlano(TipoPlano.MENSAL);
+        assinatura.setInicio(LocalDate.of(2026, 11, 1));
+        assinatura.setFim(LocalDate.of(2026, 11, 30));
+        assinatura.setCancelada(cancelada);
+        return assinatura;
     }
 
     private AssinaturaDto contratar(TipoPlano tipo) {
