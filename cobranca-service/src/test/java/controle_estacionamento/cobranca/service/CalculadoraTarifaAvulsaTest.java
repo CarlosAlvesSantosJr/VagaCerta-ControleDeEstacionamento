@@ -39,6 +39,26 @@ class CalculadoraTarifaAvulsaTest {
     }
 
     @Test
+    void respeitaValorETamanhoDeFracaoConfigurados() {
+        CalculadoraTarifaAvulsa meiaHora =
+                new CalculadoraTarifaAvulsa(new TarifaAvulsaProperties(new BigDecimal("5.50"), 30));
+
+        CalculoDto calculo = meiaHora.calcular(entrada, entrada.plusMinutes(61));
+
+        assertThat(calculo.fracoes()).isEqualTo(3);
+        assertThat(calculo.valorFracao()).isEqualByComparingTo("5.50");
+        assertThat(calculo.valorTotal()).isEqualByComparingTo("16.50");
+    }
+
+    @Test
+    void informaMinutosCompletosDePermanencia() {
+        CalculoDto calculo = calculadora.calcular(entrada, entrada.plusSeconds(3 * 60 + 59));
+
+        assertThat(calculo.minutosPermanencia()).isEqualTo(3);
+        assertThat(calculo.plano()).isNull();
+    }
+
+    @Test
     void rejeitaSaidaAntesDaEntrada() {
         assertThatThrownBy(() -> calculadora.calcular(entrada, entrada.minusMinutes(1)))
                 .isInstanceOf(RegraNegocioException.class);
