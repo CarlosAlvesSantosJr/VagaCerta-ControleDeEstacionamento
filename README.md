@@ -8,6 +8,12 @@
   Microserviços em Java 21 + Spring Boot 4 · PostgreSQL · nginx · Docker Compose
 </p>
 
+<p align="center">
+  <a href="https://github.com/CarlosAlvesSantosJr/VagaCerta-gestao-estacionamento/actions/workflows/ci.yml">
+    <img src="https://github.com/CarlosAlvesSantosJr/VagaCerta-gestao-estacionamento/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+</p>
+
 O atendente registra a entrada do veículo (placa, modelo, cor e WhatsApp do condutor) e o sistema anota o **horário de entrada sozinho**. Na saída, cobra **frações de 15 minutos** de quem é cliente esporádico. Quem tem plano **mensal, trimestral, semestral ou anual** em vigor não paga a permanência. O recibo pode ser enviado ao WhatsApp do condutor com um clique.
 
 ![Tela do pátio](docs/img/patio.png)
@@ -29,9 +35,9 @@ flowchart LR
 
 | Serviço | Responsabilidade |
 |---|---|
-| **veiculo-service** | Cadastro de veículos e contato do condutor |
-| **estacionamento-service** | Entrada e saída (tickets); orquestra os demais serviços |
-| **cobranca-service** | Tarifa avulsa, planos e assinaturas; cálculo da cobrança |
+| **[veiculo-service](veiculo-service/README.md)** | Cadastro de veículos e contato do condutor |
+| **[estacionamento-service](estacionamento-service/README.md)** | Entrada e saída (tickets); orquestra os demais serviços |
+| **[cobranca-service](cobranca-service/README.md)** | Tarifa avulsa, planos e assinaturas; cálculo da cobrança |
 | **gateway** | Serve a interface web e roteia a API |
 
 📘 **Documentação completa** com UML (casos de uso, componentes, classes, sequência, estados, implantação), modelo de dados, regras de negócio, API e decisões de arquitetura: **[docs/DOCUMENTACAO.md](docs/DOCUMENTACAO.md)**
@@ -89,3 +95,7 @@ A suíte de ponta a ponta cobre todas as funcionalidades, validações, planos e
 - Histórico de saídas e indicadores do dia
 - Interface responsiva com a identidade visual VagaCerta
 - Erros padronizados (RFC 7807) e falha rápida (503) quando um serviço está fora do ar
+
+## Contribuindo
+
+Fluxo de trabalho, padrão de commits e convenções de código: [CONTRIBUTING.md](CONTRIBUTING.md).
